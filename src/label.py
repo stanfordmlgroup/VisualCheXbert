@@ -93,7 +93,7 @@ def label(checkpoint_path, csv_path):
             out = model(batch, attn_mask)
 
             for j in range(len(out)):
-                curr_y_pred = out[j].argmax(dim=1) #shape is (batch_size)
+                curr_y_pred = torch.sigmoid(out[j]) #shape is (batch_size)
                 y_pred[j].append(curr_y_pred)
 
         for j in range(len(y_pred)):
@@ -120,11 +120,6 @@ def save_preds(y_pred, csv_path, out_path):
     df['Report Impression'] = reports.tolist()
     new_cols = ['Report Impression'] + CONDITIONS
     df = df[new_cols]
-
-    df.replace(0, np.nan, inplace=True) #blank class is NaN
-    df.replace(3, -1, inplace=True)     #uncertain class is -1
-    df.replace(2, 0, inplace=True)      #negative class is 0 
-    
     df.to_csv(os.path.join(out_path, 'labeled_reports.csv'), index=False)
 
 if __name__ == '__main__':

@@ -28,17 +28,14 @@ class bert_labeler(nn.Module):
         self.dropout = nn.Dropout(p)
         #size of the output of transformer's last layer
         hidden_size = self.bert.pooler.dense.in_features
-        #classes: present, absent, unknown, blank for 12 conditions + support devices
-        self.linear_heads = nn.ModuleList([nn.Linear(hidden_size, 4, bias=True) for _ in range(13)])
-        #classes: yes, no for the 'no finding' observation
-        self.linear_heads.append(nn.Linear(hidden_size, 2, bias=True))
+        #classes: present, absent
+        self.linear_heads = nn.ModuleList([nn.Linear(hidden_size, 1, bias=True) for _ in range(14)])
 
     def forward(self, source_padded, attention_mask):
         """ Forward pass of the labeler
         @param source_padded (torch.LongTensor): Tensor of word indices with padding, shape (batch_size, max_len)
         @param attention_mask (torch.Tensor): Mask to avoid attention on padding tokens, shape (batch_size, max_len)
-        @returns out (List[torch.Tensor])): A list of size 14 containing tensors. The first 13 have shape 
-                                            (batch_size, 4) and the last has shape (batch_size, 2)  
+        @returns out (List[torch.Tensor])): A list of size 14 containing tensors of shape (batch_size,)
         """
         #shape (batch_size, max_len, hidden_size)
         final_hidden = self.bert(source_padded, attention_mask=attention_mask)[0]
@@ -47,5 +44,7 @@ class bert_labeler(nn.Module):
         cls_hidden = self.dropout(cls_hidden)
         out = []
         for i in range(14):
-            out.append(self.linear_heads[i](cls_hidden))
+            lin_out = self.linear_heads[i](cls_hidden)
+            out.append(lin_out.squeeze(dim=1))
         return out
+

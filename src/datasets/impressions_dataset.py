@@ -17,9 +17,7 @@ class ImpressionsDataset(Dataset):
                                     'Lung Lesion', 'Edema', 'Consolidation', 'Pneumonia', 'Atelectasis',
                                     'Pneumothorax', 'Pleural Effusion', 'Pleural Other', 'Fracture',
                                     'Support Devices', 'No Finding']]
-                self.df.replace(0, 2, inplace=True) #negative label is 2
-                self.df.replace(-1, 3, inplace=True) #uncertain label is 3
-                self.df.fillna(0, inplace=True) #blank label is 0
+                self.df.fillna(0.0, inplace=True) #only have two labels, positive and negative
                 self.encoded_imp = load_list(path=list_path)
 
         def __len__(self):
@@ -41,7 +39,7 @@ class ImpressionsDataset(Dataset):
                 if torch.is_tensor(idx):
                         idx = idx.tolist()
                 label = self.df.iloc[idx].to_numpy()
-                label = torch.LongTensor(label)
+                label = torch.Tensor(label)
                 imp = self.encoded_imp[idx]
                 imp = torch.LongTensor(imp)
                 return {"imp": imp, "label": label, "len": imp.shape[0]}

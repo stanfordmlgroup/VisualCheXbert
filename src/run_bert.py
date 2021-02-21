@@ -1,5 +1,4 @@
 import os
-import argparse
 import time
 import torch
 import torch.nn as nn
@@ -33,13 +32,14 @@ def collate_fn_labels(sample_list):
      batch = {'imp': batched_imp, 'label': batched_label, 'len': len_list}
      return batch
 
-def load_data(train_csv_path, train_list_path, dev_csv_path,
+def load_data(train_csv_or_logits_path, train_list_path, dev_csv_or_logits_path,
               dev_list_path, train_weights=None, batch_size=BATCH_SIZE,
-              shuffle=True, num_workers=NUM_WORKERS):
+              shuffle=True, num_workers=NUM_WORKERS, self_training=False):
      """ Create ImpressionsDataset objects for train and test data
-     @param train_csv_path (string): path to training csv file containing labels 
+     @param train_csv_or_logits_path (string): path to training csv file containing labels 
+                                               or the list of logits
      @param train_list_path (string): path to list of encoded impressions for train set
-     @param dev_csv_path (string): same as train_csv_path but for dev set
+     @param dev_csv_or_logits_path (string): same as train_csv_or_logits_path but for dev set
      @param dev_list_path (string): same as train_list_path but for dev set
      @param train_weights (torch.Tensor): Tensor of shape (train_set_size) containing weights
                                           for each training example, for the purposes of batch
@@ -50,12 +50,18 @@ def load_data(train_csv_path, train_list_path, dev_csv_path,
      @param shuffle (bool): Whether to shuffle data before each epoch, ignored if train_weights
                             is not None
      @param num_workers (int): How many worker processes to use to load data
+     @param self_training (bool): whether to load data for self-training experiment (logits)
 
      @returns dataloaders (tuple): tuple of two ImpressionsDataset objects, for train and dev sets
      """
-     collate_fn = collate_fn_labels
-     train_dset = ImpressionsDataset(train_csv_path, train_list_path)
-     dev_dset = ImpressionsDataset(dev_csv_path, dev_list_path)
+     if self_training:
+        collate_fn = collate_fn_logits
+        train_dset = ImpressionsLogitsDataset(train_csv_or_logits_path, train_list_path)
+        dev_dset = ImpressionsLogitsDataset(dev_csv_or_logits_path, dev_list_path)
+     else:
+        collate_fn = collate_fn_labels
+        train_dset = ImpressionsDataset(train_csv_or_logits_path, train_list_path)
+        dev_dset = ImpressionsDataset(dev_csv_or_logits_path, dev_list_path)
 
      if train_weights is None:
           train_loader = torch.utils.data.DataLoader(train_dset, batch_size=batch_size, shuffle=shuffle,
@@ -75,26 +81,33 @@ def load_data(train_csv_path, train_list_path, dev_csv_path,
      dataloaders = (train_loader, dev_loader)
      return dataloaders
 
-def load_test_data(test_csv_path, test_list_path, batch_size=BATCH_SIZE, 
-                   num_workers=NUM_WORKERS, shuffle=False):
+def load_test_data(test_csv_or_logits_path, test_list_path, batch_size=BATCH_SIZE, 
+                   num_workers=NUM_WORKERS, shuffle=False, self_training=False):
      """ Create ImpressionsDataset object for the test set
-     @param test_csv_path (string): path to test csv file containing labels 
+     @param test_csv_or_logits_path (string): path to test csv file containing labels
+                                              or path to list of logits 
      @param test_list_path (string): path to list of encoded impressions
      @param batch_size (int): the batch size. As per the BERT repository, the max batch size
                               that can fit on a TITAN XP is 6 if the max sequence length
                               is 512, which is our case. We have 3 TITAN XP's 
      @param num_workers (int): how many worker processes to use to load data 
      @param shuffle (bool): whether to shuffle the data or not
+     @param self_training (bool): whether to load test data for self training (logits)
 
      @returns test_loader (dataloader): dataloader object for test set
      """
-     collate_fn = collate_fn_labels
-     test_dset = ImpressionsDataset(test_csv_path, test_list_path)
+     if self_training:
+        collate_fn = collate_fn_logits
+        test_dset = ImpressionsLogitsDataset(test_csv_or_logits_path, test_list_path)
+     else:
+        collate_fn = collate_fn_labels
+        test_dset = ImpressionsDataset(test_csv_or_logits_path, test_list_path)
+
      test_loader = torch.utils.data.DataLoader(test_dset, batch_size=batch_size, shuffle=shuffle,
                                                num_workers=num_workers, collate_fn=collate_fn)
      return test_loader
 
-def train(save_path, dataloaders, f1_weights, model=None, device=None,
+def train(save_path, dataloaders, model=None, device=None,
           optimizer=None, lr=LEARNING_RATE, log_every=LOG_EVERY,
           valid_niter=VALID_NITER, best_metric=0.0):
      """ Main training loop for the labeler
@@ -103,8 +116,6 @@ def train(save_path, dataloaders, f1_weights, model=None, device=None,
      @param device (torch.device): device for the model. If model is not None, this
                                    parameter is required
      @param dataloaders (tuple): tuple of dataloader objects as returned by load_data
-     @param f1_weights (dictionary): maps conditions to weights for blank, negation,
-                                     uncertain and positxive f1 task averaging
      @param optimizer (torch.optim.Optimizer): the optimizer to use, if applicable
      @param lr (float): learning rate to use in the optimizer, ignored if optimizer
                         is not None
@@ -119,7 +130,7 @@ def train(save_path, dataloaders, f1_weights, model=None, device=None,
           return
      
      if model is None:
-          model = bert_labeler(pretrain_path=PRETRAIN_PATH)
+          model = bert_labeler(pretrain_path='/data3/aihc-winter20-chexbert/bluebert/pretrain_repo')
           model.train()   #put the model into train mode
           device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
           if torch.cuda.device_count() > 1:
@@ -137,7 +148,7 @@ def train(save_path, dataloaders, f1_weights, model=None, device=None,
      report_loss = 0.0
      train_ld = dataloaders[0]
      dev_ld = dataloaders[1]
-     loss_func = nn.CrossEntropyLoss(reduction='sum')
+     loss_func = nn.BCEWithLogitsLoss(reduction='sum')
      
      print('begin labeler training')
      for epoch in range(NUM_EPOCHS):
@@ -151,8 +162,8 @@ def train(save_path, dataloaders, f1_weights, model=None, device=None,
                attn_mask = utils.generate_attention_masks(batch, src_len, device)
 
                optimizer.zero_grad()
-               out = model(batch, attn_mask) #list of 14 tensors
-
+               out = model(batch, attn_mask) #list of 14 tensors of shape (batch_size,)
+               
                batch_loss = 0.0
                for j in range(len(out)):
                     batch_loss += loss_func(out[j], label[j])
@@ -171,26 +182,17 @@ def train(save_path, dataloaders, f1_weights, model=None, device=None,
                     
                if (i+1) % valid_niter == 0:
                     print('\n begin validation')
-                    metrics = utils.evaluate(model, dev_ld, device, f1_weights)
-                    weighted = metrics['weighted']
-                    kappas = metrics['kappa']
+                    metrics = utils.evaluate(model, dev_ld, device)
+                    auc = metrics['auc']
 
+                    metric_avg = []
                     for j in range(len(CONDITIONS)):
-                         print('%s kappa: %.3f' % (CONDITIONS[j], kappas[j]))
-                    print('average: %.3f' % (np.mean(kappas)))
+                         print('%s auc: %.3f' % (CONDITIONS[j], auc[j]))
+                         if CONDITIONS[j] in EVAL_CONDITIONS:
+                              metric_avg.append(auc[j])
+                    metric_avg = np.mean(metric_avg)
+                    print('average: %.3f' % metric_avg)
                          
-                    #for j in range(len(CONDITIONS)):
-                    #     print('%s weighted_f1: %.3f' % (CONDITIONS[j], weighted[j]))
-                    #print('average of weighted_f1: %.3f' % (np.mean(weighted)))
-
-                    for j in range(len(CONDITIONS)):
-                         print('%s blank_f1:  %.3f, negation_f1: %.3f, uncertain_f1: %.3f, positive: %.3f' % (CONDITIONS[j],
-                                                                                                              metrics['blank'][j],
-                                                                                                              metrics['negation'][j],
-                                                                                                              metrics['uncertain'][j],
-                                                                                                              metrics['positive'][j]))
-                         
-                    metric_avg = np.mean(kappas)
                     if metric_avg > best_metric: #new best network
                          print("saving new best network!\n")
                          best_metric = metric_avg
@@ -222,37 +224,22 @@ def model_from_ckpt(model, ckpt_path):
      return (model, optimizer, device)
 
 if __name__ == '__main__':
-     parser = argparse.ArgumentParser(description='Train BERT-base model on task of labeling 14 medical conditions.')
-     parser.add_argument('--train_csv', type=str, nargs='?', required=True,
-                         help='path to csv containing train reports.')
-     parser.add_argument('--dev_csv', type=str, nargs='?', required=True,
-                         help='path to csv containing dev reports.')
-     parser.add_argument('--train_imp_list', type=str, nargs='?', required=True,
-                         help='path to list of tokenized train set report impressions')
-     parser.add_argument('--dev_imp_list', type=str, nargs='?', required=True,
-                         help='path to list of tokenized dev set report impressions')
-     parser.add_argument('--output_dir', type=str, nargs='?', required=True,
-                         help='path to output directory where checkpoints will be saved')
-     parser.add_argument('--checkpoint', type=str, nargs='?', required=False,
-                         help='path to existing checkpoint to initialize weights from')
-     args = parser.parse_args()
-     train_csv_path = args.train_csv
-     dev_csv_path = args.dev_csv
-     train_imp_path = args.train_imp_list
-     dev_imp_path = args.dev_imp_list
-     out_path = args.output_dir
-     checkpoint_path = args.checkpoint
+     #TRAIN ON LABELS
+     #checkpoint_path = '/data3/aihc-winter20-chexbert/bluebert/mimic_reports/labeler_ckpt/auto/model_epoch6_iter8000'
+     #model, optimizer, device = model_from_ckpt(bert_labeler(), checkpoint_path)
+     #dataloaders = load_data('/data3/aihc-winter20-chexbert/MIMIC-CXR/vision_labeled/mimic_master_vision_labels.csv',
+     #                        '/data3/aihc-winter20-chexbert/bluebert/vision_labels/impressions_lists/mimic_master',
+     #                        '/data3/aihc-winter20-chexbert/chexpert_data/valid_vision_200.csv',
+     #                        '/data3/aihc-winter20-chexbert/bluebert/vision_labels/impressions_lists/valid_vision_200') 
+     #train(save_path='/data3/aihc-winter20-chexbert/bluebert/vision_labels/labeler_ckpt/eval_cond',
+     #      dataloaders=dataloaders)
 
-     if checkpoint_path:
-          model, optimizer, device = model_from_ckpt(bert_labeler(), checkpoint_path)
-     else:
-          model, optimizer, device = None, None, None
-     f1_weights = utils.get_weighted_f1_weights(dev_csv_path)
-     dataloaders = load_data(train_csv_path, train_imp_path, dev_csv_path, dev_imp_path)
-     train(save_path=out_path,
-           dataloaders=dataloaders,
-           model=model,
-           optimizer=optimizer,
-           device=device, 
-           f1_weights=f1_weights)
-     
+
+     #TEST
+     model = bert_labeler()
+     checkpoint_path = '/data3/aihc-winter20-chexbert/bluebert/vision_labels/labeler_ckpt/model_epoch3_iter2000'
+     test_loader = load_test_data('/data3/aihc-winter20-chexbert/chexpert_data/vision_test_gt.csv',
+                                  '/data3/aihc-winter20-chexbert/bluebert/vision_labels/impressions_lists/vision_test')
+     utils.test(model, checkpoint_path, test_loader)
+
+    
