@@ -51,7 +51,7 @@ python label.py -h
 
 # Citation
 
-If you use the CheXbert labeler in your work, please cite our paper:
+If you use the VisualCheXbert labeler in your work, please cite our paper:
 
 ```
 @article{jain2021visualchexbert,
