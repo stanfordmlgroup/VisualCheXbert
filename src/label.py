@@ -131,11 +131,9 @@ def label_and_save_preds(checkpoint_folder, csv_path, out_path):
     logreg_models_path = f"{checkpoint_folder}/logreg_models.pickle"
     df_visualchexbert = apply_logreg_mapping(df, logreg_models_path)
 
-    reports = pd.read_csv(csv_path)['Report Impression']
+    reports = pd.read_csv(csv_path)['Report Impression'].tolist()
 
-    df_visualchexbert['Report Impression'] = reports.tolist()
-    new_cols = ['Report Impression'] + CONDITIONS
-    df_visualchexbert = df_visualchexbert[new_cols]
+    df_visualchexbert.insert(loc=0, column='Report Impression', value=reports)
     df_visualchexbert.to_csv(os.path.join(out_path, 'labeled_reports.csv'), index=False)
 
     return df_visualchexbert
