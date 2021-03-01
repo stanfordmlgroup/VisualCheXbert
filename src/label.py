@@ -148,7 +148,7 @@ if __name__ == '__main__':
     parser.add_argument('-o', '--output_dir', type=str, nargs='?', required=True,
                         help='path to intended output folder')
     parser.add_argument('-c', '--checkpoint_folder', type=str, nargs='?', required=False, default="checkpoint",
-                        help='path to folder with pytorch model checkpoints and serialized log reg models')
+                        help='path to folder with trained model checkpoints')
     args = parser.parse_args()
     csv_path = args.data
     out_path = args.output_dir
