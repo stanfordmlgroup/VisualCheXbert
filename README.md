@@ -33,7 +33,7 @@ Download our trained model checkpoints here: https://drive.google.com/file/d/1Od
 
 ### Label reports with VisualCheXbert
 
-1. Put all reports in a csv file under the column name "Report Impression". The path to this csv is {path to reports}. 
+1. Put all reports in a csv file under the column name "Report Impression" (see src/sample_reports.csv for an example). The path to this csv is {path to reports}. 
 2. Download and unzip the checkpoint folder in the src directory (see above section). The path to this folder is {path to checkpoint folder}.
 3. Navigate to the src directory and run the following command, where the path to your desired output folder is {path to output dir}:
 
