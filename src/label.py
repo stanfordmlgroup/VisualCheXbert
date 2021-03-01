@@ -12,6 +12,7 @@ from collections import OrderedDict
 from datasets.unlabeled_dataset import UnlabeledDataset
 from constants import *
 from tqdm import tqdm
+import pickle
 
 def collate_fn_no_labels(sample_list):
     """Custom collate function to pad reports in each batch to the max len,
@@ -51,10 +52,27 @@ def load_unlabeled_data(csv_path, batch_size=BATCH_SIZE, num_workers=NUM_WORKERS
                                          num_workers=num_workers, collate_fn=collate_fn)
     return loader
     
-def label(checkpoint_path, csv_path):
+def apply_logreg_mapping(df_probs, logreg_models_path):
+    logreg_models = {}
+    visualchexbert_dict = {}
+    try:
+        with open(logreg_models_path, "rb") as handle:
+            logreg_models = pickle.load(handle)
+    except Exception as e:
+        print("Error loading path to logistic regression models. Please ensure that the pickle file is in the checkpoint folder.")
+        print(f"Exception: {e}")
+    for condition in CONDITIONS:
+        clf = logreg_models[condition]
+        y_pred = clf.predict(df_probs)
+        visualchexbert_dict[condition] = y_pred
+    df_visualchexbert = pd.DataFrame.from_dict(visualchexbert_dict)
+    return df_visualchexbert
+
+def label_and_save_preds(checkpoint_folder, csv_path, out_path):
     """Labels a dataset of reports
     @param checkpoint_path (string): location of saved model checkpoint 
     @param csv_path (string): location of csv with reports
+    @param out_path (string): path to output directory
 
     @returns y_pred (List[List[int]]): Labels for each of the 14 conditions, per report  
     """
@@ -62,6 +80,7 @@ def label(checkpoint_path, csv_path):
     
     model = bert_labeler()
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    checkpoint_path = f"{checkpoint_folder}/visualCheXbert.pth"
     if torch.cuda.device_count() > 0: #works even if only 1 GPU available
         print("Using", torch.cuda.device_count(), "GPUs!")
         model = nn.DataParallel(model) #to utilize multiple GPU's
@@ -103,24 +122,23 @@ def label(checkpoint_path, csv_path):
         model.train()
 
     y_pred = [t.tolist() for t in y_pred]
-    return y_pred
-
-def save_preds(y_pred, csv_path, out_path):
-    """Save predictions as out_path/labeled_reports.csv 
-    @param y_pred (List[List[int]]): list of predictions for each report
-    @param csv_path (string): path to csv containing reports
-    @param out_path (string): path to output directory
-    """
     y_pred = np.array(y_pred)
     y_pred = y_pred.T
     
     df = pd.DataFrame(y_pred, columns=CONDITIONS)
+
+    # Apply mapping from probs to image labels
+    logreg_models_path = f"{checkpoint_folder}/logreg_models.pickle"
+    df_visualchexbert = apply_logreg_mapping(df, logreg_models_path)
+
     reports = pd.read_csv(csv_path)['Report Impression']
 
-    df['Report Impression'] = reports.tolist()
+    df_visualchexbert['Report Impression'] = reports.tolist()
     new_cols = ['Report Impression'] + CONDITIONS
-    df = df[new_cols]
-    df.to_csv(os.path.join(out_path, 'labeled_reports.csv'), index=False)
+    df_visualchexbert = df_visualchexbert[new_cols]
+    df_visualchexbert.to_csv(os.path.join(out_path, 'labeled_reports.csv'), index=False)
+
+    return df_visualchexbert
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Label a csv file containing radiology reports')
@@ -129,12 +147,11 @@ if __name__ == '__main__':
                               under the \"Report Impression\" column')
     parser.add_argument('-o', '--output_dir', type=str, nargs='?', required=True,
                         help='path to intended output folder')
-    parser.add_argument('-c', '--checkpoint', type=str, nargs='?', required=True,
-                        help='path to the pytorch checkpoint')
+    parser.add_argument('-c', '--checkpoint_folder', type=str, nargs='?', required=False, default="checkpoint",
+                        help='path to folder with pytorch model checkpoints and serialized log reg models')
     args = parser.parse_args()
     csv_path = args.data
     out_path = args.output_dir
-    checkpoint_path = args.checkpoint
+    checkpoint_path = args.checkpoint_folder
 
-    y_pred = label(checkpoint_path, csv_path)
-    save_preds(y_pred, csv_path, out_path)
+    label_and_save_preds(checkpoint_path, csv_path, out_path)
