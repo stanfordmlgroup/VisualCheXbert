@@ -12,7 +12,7 @@ Automatic extraction of medical conditions from free-text radiology reports is c
 ![The VisualCheXbert training approach](figures/VisualCheXbert_Figure.png)
 
 ## Prerequisites 
-Install requirements (using Python 3.7 or higher)
+(Recommended) Install requirements (using Python 3.7 or higher) using pip
 
 ```
 pip install -r requirements.txt
