@@ -33,7 +33,9 @@ Download our trained model checkpoints here: https://drive.google.com/file/d/1Od
 
 ### Label reports with VisualCheXbert
 
-Put all reports in a csv file under the column name "Report Impression". Let the path to this csv be {path to reports}. Download and unzip the checkpoint folder, and let the path to it be {path to checkpoint folder}. Let the path to your desired output folder by {path to output dir}. Navigate to the src directory and run the following command: 
+1. Put all reports in a csv file under the column name "Report Impression". The path to this csv is {path to reports}. 
+2. Download and unzip the checkpoint folder in the src directory (see above section). The path to this folder is {path to checkpoint folder}.
+3. Navigate to the src directory and run the following command, where the path to your desired output folder is {path to output dir}:
 
 ```
 python label.py -d={path to reports} -o={path to output dir} -c={path to checkpoint folder} 
