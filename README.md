@@ -50,7 +50,7 @@ Download our trained model checkpoints here: https://drive.google.com/file/d/1Od
 python label.py -d={path to reports} -o={path to output dir} -c={path to checkpoint folder} 
 ```
 
-The output file with labeled reports is {path to output dir}/labeled_reports.csv
+The output file with labeled reports is {path to output dir}/labeled_reports.csv. Note that the output of VisualCheXbert is binary, where a label of 1 corresponds to presence of a condition in the associated X-ray and label of 0 corresponds to the absence of a condition in the associated X-ray.
 
 Run the following for descriptions of all command line arguments:
 
