@@ -3,7 +3,7 @@ VisualCheXbert is an automated deep-learning based chest radiology report labele
 
 Paper (Accepted to ACM-CHIL 2021): https://arxiv.org/pdf/2102.11467.pdf
 
-License from us (For Commercial Purposes): http://techfinder2.stanford.edu/technology_detail.php?ID=43869 (currently, description is for CheXbert, but please use the same licensing contact for VisualCheXbert)
+License from us (For Commercial Purposes): Please use the same licensing contact for VisualCheXbert as for CheXbert, which can be found here: http://techfinder2.stanford.edu/technology_detail.php?ID=43869
 
 ## Abstract
 
@@ -12,7 +12,7 @@ Automatic extraction of medical conditions from free-text radiology reports is c
 ![The VisualCheXbert training approach](figures/VisualCheXbert_Figure.png)
 
 ## Prerequisites 
-(Recommended) Install requirements (using Python 3.7 or higher) using pip
+(Recommended) Install requirements, with Python 3.7 or higher, using pip
 
 ```
 pip install -r requirements.txt
