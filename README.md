@@ -20,19 +20,19 @@ pip install -r requirements.txt
 
 OR
 
-Create conda environment
+Create conda environment.
 
 ```
 conda env create -f environment.yml
 ```
 
-Activate environment
+Activate environment.
 
 ```
 conda activate visualCheXbert
 ```
 
-By default, all available GPU's will be used for labeling in parallel. If there is no GPU, the CPU is used. You can control which GPU's are used by appropriately setting CUDA_VISIBLE_DEVICES. The batch size by default is 18 but can be changed inside constants.py/.
+By default, all available GPU's will be used for labeling in parallel. If there is no GPU, the CPU is used. You can control which GPU's are used by appropriately setting CUDA_VISIBLE_DEVICES. The batch size by default is 18 but can be changed inside src/constants.py.
 
 ## Checkpoint download
 
