@@ -1,7 +1,9 @@
 # VisualCheXbert: Addressing the Discrepancy Between Radiology Report Labels and Image Labels
-VisualCheXbert is an automated deep-learning based chest radiology report labeler that can label for the following 14 medical observations: Fracture, Consolidation, Enlarged Cardiomediastinum, No Finding, Pleural Other, Cardiomegaly, Pneumothorax, Atelectasis, Support Devices, Edema, Pleural Effusion, Lung Lesion, and Lung Opacity. VisualCheXbert aims to produce better labels for computer vision models using only the textual reports and improves performance compared to previous report labeling approaches when evaluated against labels annotated by radiologists observing associated chest X-ray images. However, due to class imbalance in our test set, we only report scores on the following subset of the 14 conditions: Atelectasis, Cardiomegaly, Edema, Pleural Effusion, Enlarged Cardiomediastinum, Lung Opacity, Support Devices, and No Finding.
+VisualCheXbert is an automated deep-learning based chest radiology report labeler that can label for the following 14 medical observations: Fracture, Consolidation, Enlarged Cardiomediastinum, No Finding, Pleural Other, Cardiomegaly, Pneumothorax, Atelectasis, Support Devices, Edema, Pleural Effusion, Lung Lesion, and Lung Opacity. VisualCheXbert aims to produce better labels for computer vision models using only the textual reports and improves performance compared to previous report labeling approaches when evaluated against labels annotated by radiologists observing associated chest X-ray images.
 
-Paper (Accepted to ACM-CHIL 2021): https://arxiv.org/pdf/2102.11467.pdf
+Paper (Accepted to ACM-CHIL 2021): https://arxiv.org/pdf/2102.11467.pdf <br />
+Note that due to class imbalance in our test set, our paper reports scores on the following subset of the 14 conditions: Atelectasis, Cardiomegaly, Edema, Pleural Effusion, Enlarged Cardiomediastinum, Lung Opacity, Support Devices, and No Finding.
+
 
 License from us (For Commercial Purposes): Please use the same licensing contact for VisualCheXbert as for CheXbert, which can be found here: http://techfinder2.stanford.edu/technology_detail.php?ID=43869.
 
