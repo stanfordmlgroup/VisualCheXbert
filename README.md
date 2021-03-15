@@ -64,7 +64,7 @@ python label.py -h
 
 # Label Convention
 
-The labeler outputs the following numbers corresponding to classes.
+The labeler outputs the following numbers corresponding to classes:
 - Positive: 1
 - Negative: 0
 
