@@ -62,6 +62,12 @@ python label.py -h
 
 **Ignore any error messages about the size of the report exceeding 512 tokens. All reports are automatically cut off at 512 tokens.**
 
+# Label Convention
+
+The labeler outputs the following numbers corresponding to classes.
+- Positive: 1
+- Negative: 0
+
 # Citation
 
 If you use the VisualCheXbert labeler in your work, please cite our paper:
