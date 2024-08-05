@@ -38,7 +38,7 @@ By default, all available GPU's will be used for labeling in parallel. If there 
 
 ## Checkpoint download
 
-Download our trained model checkpoints here: https://drive.google.com/file/d/1Od62LAbdmfcK6W8TfzNcLIUouxWZoMHn/view?usp=sharing.
+Download our trained model checkpoints here: https://drive.google.com/file/d/1QmwAurEmiXc-_uF0JrgAbWCxpF-pl52s/view?usp=drive_link.
 
 ## Usage
 
